@@ -1,14 +1,23 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use syn::parse::{Parse, ParseStream, Result};
 
+#[derive(Debug, PartialEq, Eq)]
+struct RequestBuilder;
+
+impl Parse for RequestBuilder {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Ok(RequestBuilder)
+    }
+}
 #[cfg(test)]
 mod tests {
+    use syn::parse_quote;
+
     use super::*;
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn basic() {
+        let actual: RequestBuilder = parse_quote! {};
+        let expected = RequestBuilder;
+        assert_eq!(actual, expected);
     }
 }
