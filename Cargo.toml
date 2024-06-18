@@ -7,4 +7,5 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
+httparse = "1.9.4"
 syn = "2.0.66"
