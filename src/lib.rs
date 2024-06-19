@@ -1,7 +1,36 @@
 use std::collections::HashMap;
 
+use proc_macro::TokenStream;
+
 mod request;
 mod request_builder;
+
+#[proc_macro]
+pub fn request_builder(input: TokenStream) -> TokenStream {
+    // `TokenStream` eats up the space characters. However, to match the RFC 7230 spec we need each header to be on a new line.
+    // So to preserve the new lines, the input needs to be a string literal when the input is a multi-line string.
+    let input = match input.clone().into_iter().next().unwrap() {
+        proc_macro::TokenTree::Literal(lit) => {
+            // Remove the quotes from the string literal
+            // And trim the leading and trailing whitespaces
+            lit.to_string()
+                .trim_matches('"')
+                .lines()
+                .map(|line| line.trim())
+                .collect::<Vec<_>>()
+                .join("\n")
+        }
+        proc_macro::TokenTree::Ident(_) => input.to_string(),
+        _ => panic!("Invalid input"), // TODO: Improve error message
+    };
+
+    let builder = request_builder::RequestBuilder::new(&input);
+
+    quote::quote! {
+        #builder
+    }
+    .into()
+}
 
 fn parse_request(buf: &[u8]) -> (String, String, HashMap<String, String>, usize) {
     let mut headers = [httparse::EMPTY_HEADER; 16];

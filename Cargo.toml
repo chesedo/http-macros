@@ -10,3 +10,6 @@ proc-macro = true
 httparse = "1.9.4"
 proc-macro2 = "1.0.85"
 quote = "1.0.36"
+
+[dev-dependencies]
+http = "1.1.0"

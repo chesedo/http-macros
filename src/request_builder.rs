@@ -5,14 +5,14 @@ use quote::{quote, ToTokens};
 use crate::parse_request;
 
 #[derive(Debug, PartialEq, Eq, Default)]
-struct RequestBuilder {
+pub struct RequestBuilder {
     method: String,
     uri: String,
     headers: HashMap<String, String>,
 }
 
 impl RequestBuilder {
-    fn new(input: &str) -> Self {
+    pub fn new(input: &str) -> Self {
         let buf = input.as_bytes();
         let (method, uri, headers, _) = parse_request(buf);
 
@@ -28,11 +28,17 @@ impl ToTokens for RequestBuilder {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let method = &self.method;
         let uri = &self.uri;
+        let headers = self.headers.iter().map(|(k, v)| {
+            quote! {
+                .header(#k, #v)
+            }
+        });
 
         let builder = quote! {
             http::Request::builder()
                 .method(#method)
                 .uri(#uri)
+                #(#headers)*
         };
 
         builder.to_tokens(tokens);
@@ -125,6 +131,29 @@ Accept
             http::Request::builder()
                 .method("GET")
                 .uri("/health")
+        };
+
+        assert_eq!(input.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn header_output() {
+        let input = RequestBuilder {
+            method: "PUT".to_string(),
+            uri: "/hello".to_string(),
+            headers: {
+                let mut headers = HashMap::new();
+                headers.insert("Host".to_string(), "localhost:8000".to_string());
+                headers.insert("Accept".to_string(), "application/json".to_string());
+                headers
+            },
+        };
+        let expected = quote! {
+            http::Request::builder()
+                .method("PUT")
+                .uri("/hello")
+                .header("Host", "localhost:8000")
+                .header("Accept", "application/json")
         };
 
         assert_eq!(input.to_token_stream().to_string(), expected.to_string());
