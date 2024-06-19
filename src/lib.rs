@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use proc_macro::TokenStream;
 
 mod request;
@@ -52,23 +50,24 @@ fn get_request(input: TokenStream) -> String {
     }
 }
 
-fn parse_request(buf: &[u8]) -> (String, String, HashMap<String, String>, usize) {
+fn parse_request(buf: &[u8]) -> (String, String, Vec<(String, String)>, usize) {
     let mut headers = [httparse::EMPTY_HEADER; 16];
     let mut req = httparse::Request::new(&mut headers);
     let res = req.parse(buf).unwrap();
 
     let method = req.method.unwrap();
     let uri = req.path.unwrap();
-    let mut headers = HashMap::new();
-
-    for header in req.headers {
-        if !header.name.is_empty() {
-            headers.insert(
-                header.name.to_string(),
-                std::str::from_utf8(&header.value).unwrap().to_string(),
-            );
-        }
-    }
+    let headers = req
+        .headers
+        .iter()
+        .filter(|h| !h.name.is_empty())
+        .map(|h| {
+            (
+                h.name.to_string(),
+                std::str::from_utf8(h.value).unwrap().to_string(),
+            )
+        })
+        .collect::<Vec<_>>();
 
     let offset = match res {
         httparse::Status::Complete(offset) => offset,

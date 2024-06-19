@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use quote::{quote, ToTokens};
 
 use crate::parse_request;
@@ -8,7 +6,7 @@ use crate::parse_request;
 pub struct RequestBuilder {
     method: String,
     uri: String,
-    headers: HashMap<String, String>,
+    headers: Vec<(String, String)>,
 }
 
 impl RequestBuilder {
@@ -28,9 +26,9 @@ impl ToTokens for RequestBuilder {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let method = &self.method;
         let uri = &self.uri;
-        let headers = self.headers.iter().map(|(k, v)| {
+        let headers = self.headers.iter().map(|(n, v)| {
             quote! {
-                .header(#k, #v)
+                .header(#n, #v)
             }
         });
 
@@ -85,12 +83,10 @@ Accept: application/json
         let expected = RequestBuilder {
             method: "GET".to_string(),
             uri: "/health".to_string(),
-            headers: {
-                let mut headers = HashMap::new();
-                headers.insert("Host".to_string(), "localhost:8000".to_string());
-                headers.insert("Accept".to_string(), "application/json".to_string());
-                headers
-            },
+            headers: Vec::from([
+                ("Host".to_string(), "localhost:8000".to_string()),
+                ("Accept".to_string(), "application/json".to_string()),
+            ]),
         };
 
         assert_eq!(actual, expected);
@@ -108,12 +104,10 @@ Accept
         let expected = RequestBuilder {
             method: "GET".to_string(),
             uri: "/health".to_string(),
-            headers: {
-                let mut headers = HashMap::new();
-                headers.insert("Host".to_string(), "localhost:8000".to_string());
-                headers.insert("Accept".to_string(), "application/json".to_string());
-                headers
-            },
+            headers: Vec::from([
+                ("Host".to_string(), "localhost:8000".to_string()),
+                ("Accept".to_string(), "application/json".to_string()),
+            ]),
         };
 
         // TODO: Test for error somehow
@@ -141,12 +135,10 @@ Accept
         let input = RequestBuilder {
             method: "PUT".to_string(),
             uri: "/hello".to_string(),
-            headers: {
-                let mut headers = HashMap::new();
-                headers.insert("Host".to_string(), "localhost:8000".to_string());
-                headers.insert("Accept".to_string(), "application/json".to_string());
-                headers
-            },
+            headers: Vec::from([
+                ("Host".to_string(), "localhost:8000".to_string()),
+                ("Accept".to_string(), "application/json".to_string()),
+            ]),
         };
         let expected = quote! {
             http::Request::builder()

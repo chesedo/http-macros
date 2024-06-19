@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use quote::{quote, ToTokens};
 
 use crate::parse_request;
@@ -8,7 +6,7 @@ use crate::parse_request;
 pub struct Request {
     method: String,
     uri: String,
-    headers: HashMap<String, String>,
+    headers: Vec<(String, String)>,
     body: Vec<u8>,
 }
 
@@ -30,9 +28,9 @@ impl ToTokens for Request {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let method = &self.method;
         let uri = &self.uri;
-        let headers = self.headers.iter().map(|(k, v)| {
+        let headers = self.headers.iter().map(|(n, v)| {
             quote! {
-                .header(#k, #v)
+                .header(#n, #v)
             }
         });
         let body = String::from_utf8(self.body.clone()).unwrap();
@@ -64,11 +62,7 @@ Host: localhost:8000
         let expected = Request {
             method: "POST".to_string(),
             uri: "/todo".to_string(),
-            headers: {
-                let mut headers = HashMap::new();
-                headers.insert("Host".to_string(), "localhost:8000".to_string());
-                headers
-            },
+            headers: Vec::from([("Host".to_string(), "localhost:8000".to_string())]),
             body: "{ \"note\": \"Buy milk\" }".as_bytes().to_vec(),
         };
 
@@ -80,11 +74,7 @@ Host: localhost:8000
         let input = Request {
             method: "GET".to_string(),
             uri: "/health".to_string(),
-            headers: {
-                let mut headers = HashMap::new();
-                headers.insert("Host".to_string(), "localhost:8000".to_string());
-                headers
-            },
+            headers: Vec::from([("Host".to_string(), "localhost:8000".to_string())]),
             body: "{ \"note\": \"Buy milk\" }".as_bytes().to_vec(),
         };
         let expected = quote! {
