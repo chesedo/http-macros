@@ -1,6 +1,6 @@
 use quote::{quote, ToTokens};
 
-use crate::parse_request;
+use crate::Parser;
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Request {
@@ -13,13 +13,18 @@ pub struct Request {
 impl Request {
     pub fn new(input: &str) -> Self {
         let buf = input.as_bytes();
-        let (method, uri, headers, offset) = parse_request(buf);
+        let Parser {
+            method,
+            uri,
+            headers,
+            body,
+        } = Parser::new(buf);
 
         Self {
             method,
             uri,
             headers,
-            body: buf[offset..].to_vec(),
+            body: body.to_vec(),
         }
     }
 }
@@ -54,7 +59,7 @@ mod tests {
     #[test]
     fn simple() {
         let actual = Request::new(
-            r#"POST /todo HTTP/1.1
+            r#"POST /todo
 Host: localhost:8000
 
 { "note": "Buy milk" }"#,

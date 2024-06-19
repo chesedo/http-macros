@@ -3,23 +3,22 @@ use http_macros::request;
 
 #[test]
 fn test_method() {
-    let request = request!(GET /hello HTTP/1.1);
+    let request = request!(GET /hello);
     assert_eq!(request.method(), Method::GET);
 }
 
 #[test]
 fn test_uri() {
-    let request = request!("POST /api/user HTTP/1.1");
+    let request = request!("POST /api/user");
     assert_eq!(request.uri().path(), "/api/user");
 }
 
 #[test]
 fn test_headers() {
     let request = request!(
-        "
-       GET /hello HTTP/1.1
-       Host: example.com
-       User-Agent: rust-test
+        "GET /hello
+         Host: example.com
+         User-Agent: rust-test
     "
     );
     assert_eq!(request.headers().get("Host").unwrap(), "example.com");
@@ -29,7 +28,7 @@ fn test_headers() {
 #[test]
 fn test_body() {
     let request = request!(
-        r#"POST /todo HTTP/1.1
+        r#"POST /todo
            Host: example.com
            User-Agent: rust-test
 
@@ -39,9 +38,3 @@ fn test_body() {
     assert_eq!(request.headers().get("Host").unwrap(), "example.com");
     assert_eq!(request.headers().get("User-Agent").unwrap(), "rust-test");
 }
-
-// TODO: Restore after writing own parser
-// #[test]
-// fn test_simple() {
-//     request!(GET /hello);
-// }

@@ -1,6 +1,6 @@
 use quote::{quote, ToTokens};
 
-use crate::parse_request;
+use crate::Parser;
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct RequestBuilder {
@@ -12,7 +12,12 @@ pub struct RequestBuilder {
 impl RequestBuilder {
     pub fn new(input: &str) -> Self {
         let buf = input.as_bytes();
-        let (method, uri, headers, _) = parse_request(buf);
+        let Parser {
+            method,
+            uri,
+            headers,
+            ..
+        } = Parser::new(buf);
 
         Self {
             method,
@@ -48,7 +53,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "httparse always requires the version. Thus, will have to make own parser first"]
     fn basic() {
         let actual = RequestBuilder::new("GET /health");
         let expected = RequestBuilder {
@@ -61,45 +65,11 @@ mod tests {
     }
 
     #[test]
-    fn basic_with_version() {
-        let actual = RequestBuilder::new("GET /health HTTP/1.1");
-        let expected = RequestBuilder {
-            method: "GET".to_string(),
-            uri: "/health".to_string(),
-            ..Default::default()
-        };
-
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
     fn with_headers() {
-        let actual = RequestBuilder::new(
-            r#"GET /health HTTP/1.1
-Host: localhost:8000
-Accept: application/json
-"#, // TODO: remove the new line
-        );
-        let expected = RequestBuilder {
-            method: "GET".to_string(),
-            uri: "/health".to_string(),
-            headers: Vec::from([
-                ("Host".to_string(), "localhost:8000".to_string()),
-                ("Accept".to_string(), "application/json".to_string()),
-            ]),
-        };
-
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    #[ignore = "httparse always requires the version. Thus, will have to make own parser first"]
-    fn with_malformed_headers() {
         let actual = RequestBuilder::new(
             r#"GET /health
 Host: localhost:8000
-Accept
-"#, // TODO: remove the new line
+Accept: application/json"#,
         );
         let expected = RequestBuilder {
             method: "GET".to_string(),
@@ -110,7 +80,6 @@ Accept
             ]),
         };
 
-        // TODO: Test for error somehow
         assert_eq!(actual, expected);
     }
 

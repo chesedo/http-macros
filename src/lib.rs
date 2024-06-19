@@ -50,29 +50,233 @@ fn get_request(input: TokenStream) -> String {
     }
 }
 
-fn parse_request(buf: &[u8]) -> (String, String, Vec<(String, String)>, usize) {
-    let mut headers = [httparse::EMPTY_HEADER; 16];
-    let mut req = httparse::Request::new(&mut headers);
-    let res = req.parse(buf).unwrap();
+struct Tokenizer<'a> {
+    buf: &'a [u8],
+    pos: usize,
+}
 
-    let method = req.method.unwrap();
-    let uri = req.path.unwrap();
-    let headers = req
-        .headers
-        .iter()
-        .filter(|h| !h.name.is_empty())
-        .map(|h| {
-            (
-                h.name.to_string(),
-                std::str::from_utf8(h.value).unwrap().to_string(),
-            )
-        })
-        .collect::<Vec<_>>();
+impl Tokenizer<'_> {
+    fn new(buf: &[u8]) -> Tokenizer {
+        Tokenizer { buf, pos: 0 }
+    }
 
-    let offset = match res {
-        httparse::Status::Complete(offset) => offset,
-        _ => 0,
-    };
+    fn next(&mut self) -> Option<String> {
+        let start = self.pos;
+        let mut end = self.pos;
 
-    (method.to_string(), uri.to_string(), headers, offset)
+        while end < self.buf.len() {
+            if self.buf[end] == b' ' || self.buf[end] == b'\n' {
+                break;
+            }
+
+            end += 1;
+        }
+
+        if start == end {
+            return None;
+        }
+
+        self.pos = end + 1;
+
+        Some(
+            std::str::from_utf8(&self.buf[start..end])
+                .unwrap()
+                .to_string(),
+        )
+    }
+
+    fn is_end(&self) -> bool {
+        self.pos >= self.buf.len()
+    }
+
+    fn was_newline(&self) -> bool {
+        self.buf[self.pos - 1] == b'\n'
+    }
+
+    fn is_newline(&self) -> bool {
+        self.buf[self.pos] == b'\n'
+    }
+
+    fn skip_newline(&mut self) {
+        self.pos += 1;
+    }
+}
+
+impl<'a> Tokenizer<'a> {
+    fn rest(self) -> &'a [u8] {
+        let Self { buf, pos } = self;
+
+        if pos >= buf.len() {
+            &[]
+        } else {
+            &buf[pos..]
+        }
+    }
+}
+
+struct Parser<'a> {
+    method: String,
+    uri: String,
+    headers: Vec<(String, String)>,
+    body: &'a [u8],
+}
+
+impl<'a> Parser<'a> {
+    fn new(buf: &'a [u8]) -> Parser<'a> {
+        let mut tokenizer = Tokenizer::new(buf);
+
+        let Some(method) = tokenizer.next() else {
+            todo!("handle missing method");
+        };
+
+        let Some(uri) = tokenizer.next() else {
+            todo!("handle missing uri");
+        };
+
+        if tokenizer.is_end() {
+            return Self {
+                method,
+                uri,
+                headers: vec![],
+                body: tokenizer.rest(),
+            };
+        }
+
+        if !tokenizer.was_newline() {
+            todo!("unexpected extra request line item");
+        }
+
+        let mut headers = Vec::new();
+
+        while !tokenizer.is_end() {
+            // Double new line means end of headers and start of body
+            if tokenizer.is_newline() {
+                tokenizer.skip_newline();
+                break;
+            }
+
+            let Some(name) = tokenizer.next() else {
+                todo!("handle missing header name");
+            };
+
+            let name = name.trim_end_matches(':').to_string();
+
+            let mut value = Vec::new();
+
+            // An empty value is valid - meaning we just saw a new line
+            // A value can also consist of multiple tokens (seperated by spaces) so the end of a line means the end of a value
+            // Or the end of the buffer also means the end of a value
+            while !tokenizer.is_end() && !tokenizer.was_newline() {
+                if let Some(part) = tokenizer.next() {
+                    value.push(part);
+                } else {
+                    break;
+                }
+            }
+
+            headers.push((name, value.join(" ")));
+        }
+
+        Self {
+            method,
+            uri,
+            headers,
+            body: tokenizer.rest(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tokenizer_next() {
+        let buf = b"GET /hello HTTP/1.1\nHost: example.com\nUser-Agent: rust-test";
+        let mut tokenizer = Tokenizer::new(buf);
+
+        assert_eq!(tokenizer.next(), Some("GET".to_string()));
+        assert_eq!(tokenizer.next(), Some("/hello".to_string()));
+        assert_eq!(tokenizer.next(), Some("HTTP/1.1".to_string()));
+        assert!(tokenizer.was_newline());
+        assert_eq!(tokenizer.next(), Some("Host:".to_string()));
+        assert_eq!(tokenizer.next(), Some("example.com".to_string()));
+        assert!(tokenizer.was_newline());
+        assert_eq!(tokenizer.next(), Some("User-Agent:".to_string()));
+        assert_eq!(tokenizer.next(), Some("rust-test".to_string()));
+        assert_eq!(tokenizer.next(), None);
+    }
+
+    #[test]
+    fn parser_simple() {
+        let buf = b"GET /hello";
+        let parser = Parser::new(buf);
+
+        assert_eq!(parser.method, "GET");
+        assert_eq!(parser.uri, "/hello");
+        assert_eq!(parser.headers, vec![]);
+        assert_eq!(parser.body, b"");
+    }
+
+    #[test]
+    fn parser_with_headers() {
+        let buf = b"GET /hello\nHost: example.com\nUser-Agent: rust-test";
+        let parser = Parser::new(buf);
+
+        assert_eq!(parser.method, "GET");
+        assert_eq!(parser.uri, "/hello");
+        assert_eq!(
+            parser.headers,
+            Vec::from([
+                ("Host".to_string(), "example.com".to_string()),
+                ("User-Agent".to_string(), "rust-test".to_string())
+            ])
+        );
+        assert_eq!(parser.body, b"");
+    }
+
+    #[test]
+    fn parser_with_complex_headers() {
+        let buf = b"GET /hello\nEmpty-Value:\nAccept: application/json; application/xml";
+        let parser = Parser::new(buf);
+
+        assert_eq!(parser.method, "GET");
+        assert_eq!(parser.uri, "/hello");
+        assert_eq!(
+            parser.headers,
+            Vec::from([
+                ("Empty-Value".to_string(), "".to_string()),
+                (
+                    "Accept".to_string(),
+                    "application/json; application/xml".to_string()
+                )
+            ])
+        );
+        assert_eq!(parser.body, b"");
+    }
+
+    #[test]
+    fn parser_with_headers_and_body() {
+        let buf =
+            b"GET /hello\nHost: example.com\nUser-Agent: rust-test\n\n{ \"note\": \"Buy milk\" }";
+        let parser = Parser::new(buf);
+
+        assert_eq!(parser.method, "GET");
+        assert_eq!(parser.uri, "/hello");
+        assert_eq!(
+            parser.headers,
+            Vec::from([
+                ("Host".to_string(), "example.com".to_string()),
+                ("User-Agent".to_string(), "rust-test".to_string())
+            ])
+        );
+        assert_eq!(parser.body, b"{ \"note\": \"Buy milk\" }");
+    }
+
+    #[test]
+    #[should_panic = "unexpected extra request line item"]
+    fn parser_extra_request_line_item() {
+        let buf = b"GET /hello HTTP/1.1 extra";
+        Parser::new(buf);
+    }
 }

@@ -7,7 +7,6 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-httparse = "1.9.4"
 proc-macro2 = "1.0.85"
 quote = "1.0.36"
 
