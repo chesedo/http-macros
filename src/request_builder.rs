@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use quote::{quote, ToTokens};
+
 use crate::parse_request;
 
 #[derive(Debug, PartialEq, Eq, Default)]
@@ -19,6 +21,21 @@ impl RequestBuilder {
             uri,
             headers,
         }
+    }
+}
+
+impl ToTokens for RequestBuilder {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let method = &self.method;
+        let uri = &self.uri;
+
+        let builder = quote! {
+            http::Request::builder()
+                .method(#method)
+                .uri(#uri)
+        };
+
+        builder.to_tokens(tokens);
     }
 }
 
@@ -95,5 +112,21 @@ Accept
 
         // TODO: Test for error somehow
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn basic_output() {
+        let input = RequestBuilder {
+            method: "GET".to_string(),
+            uri: "/health".to_string(),
+            ..Default::default()
+        };
+        let expected = quote! {
+            http::Request::builder()
+                .method("GET")
+                .uri("/health")
+        };
+
+        assert_eq!(input.to_token_stream().to_string(), expected.to_string());
     }
 }
