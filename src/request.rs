@@ -1,6 +1,9 @@
 use quote::{quote, ToTokens};
 
-use crate::{get_version, Parser};
+use crate::{
+    parser::Parser,
+    token_helpers::{get_headers, get_version},
+};
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Request {
@@ -37,11 +40,7 @@ impl ToTokens for Request {
         let method = &self.method;
         let uri = &self.uri;
         let version = get_version(self.version.as_ref());
-        let headers = self.headers.iter().map(|(n, v)| {
-            quote! {
-                .header(#n, #v)
-            }
-        });
+        let headers = get_headers(self.headers.iter());
 
         // Safe to unwrap since the TokenStream already makes sure it is a valid UTF-8 string
         let body = String::from_utf8(self.body.clone()).unwrap();

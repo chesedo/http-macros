@@ -1,6 +1,9 @@
 use quote::{quote, ToTokens};
 
-use crate::{get_version, Parser};
+use crate::{
+    parser::Parser,
+    token_helpers::{get_headers, get_version},
+};
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct RequestBuilder {
@@ -35,11 +38,7 @@ impl ToTokens for RequestBuilder {
         let method = &self.method;
         let uri = &self.uri;
         let version = get_version(self.version.as_ref());
-        let headers = self.headers.iter().map(|(n, v)| {
-            quote! {
-                .header(#n, #v)
-            }
-        });
+        let headers = get_headers(self.headers.iter());
 
         let builder = quote! {
             http::Request::builder()
