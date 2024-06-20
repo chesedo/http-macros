@@ -14,10 +14,11 @@
 
 ## Installation
 
-Add `http-macros` to your `Cargo.toml`:
+Add `http-macros` and `http` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
+http = "1.1.0"
 http-macros = "0.1.0"
 ```
 
