@@ -38,6 +38,8 @@ impl ToTokens for Request {
                 .header(#n, #v)
             }
         });
+
+        // Safe to unwrap since the TokenStream already makes sure it is a valid UTF-8 string
         let body = String::from_utf8(self.body.clone()).unwrap();
 
         let builder = quote! {

@@ -1,0 +1,10 @@
+error: Missing request
+
+         = help: Try `request!(GET /hello)`
+
+ --> tests/ui/request/empty.rs:4:15
+  |
+4 |     let req = request!();
+  |               ^^^^^^^^^^
+  |
+  = note: this error originates in the macro `request` (in Nightly builds, run with -Z macro-backtrace for more info)

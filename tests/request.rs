@@ -38,3 +38,9 @@ fn test_body() {
     assert_eq!(request.headers().get("Host").unwrap(), "example.com");
     assert_eq!(request.headers().get("User-Agent").unwrap(), "rust-test");
 }
+
+#[test]
+fn ui() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/ui/request/*.rs");
+}
