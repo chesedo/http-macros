@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/http-macros.svg)](https://crates.io/crates/http-macros)
 [![docs.rs](https://docs.rs/http-macros/badge.svg)](https://docs.rs/http-macros)
-[![build status](https://github.com/chesedo/http-macros/workflows/CI/badge.svg)](https://github.com/chesedo/http-macros/actions)
+[![CI](https://github.com/chesedo/http-macros/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/chesedo/http-macros/actions/workflows/rust.yml)
 
 `http-macros` is a Rust library providing macros to simplify the creation of HTTP request types for testing purposes. 
 
