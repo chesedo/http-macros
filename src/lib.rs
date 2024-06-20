@@ -119,7 +119,7 @@ fn get_request(input: TokenStream) -> String {
             // And trim the leading and trailing whitespaces
             lit.to_string()
                 .trim_start_matches("r#")
-                .trim_end_matches("#")
+                .trim_end_matches('#')
                 .trim_matches('"')
                 .lines()
                 .map(|line| line.trim())
