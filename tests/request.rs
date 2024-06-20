@@ -3,7 +3,7 @@ use http_macros::request;
 
 #[test]
 fn test_method() {
-    let request = request!(GET /hello);
+    let request = request!("GET /hello");
     assert_eq!(request.method(), Method::GET);
 }
 
