@@ -1,5 +1,5 @@
-use http_macros::request;
+use http_macros::request_builder;
 
 fn main() {
-    let req = request!();
+    let req = request_builder!();
 }

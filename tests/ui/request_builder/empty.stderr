@@ -4,7 +4,7 @@ error: Missing request
 
  --> tests/ui/request_builder/empty.rs:4:15
   |
-4 |     let req = request!();
-  |               ^^^^^^^^^^
+4 |     let req = request_builder!();
+  |               ^^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the macro `request` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `request_builder` (in Nightly builds, run with -Z macro-backtrace for more info)
