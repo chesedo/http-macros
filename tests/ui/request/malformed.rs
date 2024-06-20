@@ -11,5 +11,8 @@ fn main() {
     let _req = request!(POST);
 
     // Extra item
-    let _req = request!(POST /reminder HTTP/1.1);
+    let _req = request!(POST /reminder HTTP/1.1 extra);
+
+    // Invalid version
+    let _req = request!(POST /reminder HTTP/0.8);
 }

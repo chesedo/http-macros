@@ -1,5 +1,6 @@
 use proc_macro::{Span, TokenStream};
 use proc_macro_error::{abort, proc_macro_error};
+use quote::{format_ident, quote};
 
 mod request;
 mod request_builder;
@@ -29,6 +30,24 @@ pub fn request(input: TokenStream) -> TokenStream {
         .unwrap()
     }
     .into()
+}
+
+fn get_version(version: Option<&String>) -> Option<proc_macro2::TokenStream> {
+    version
+        .map(|v| match v.as_str() {
+            "HTTP/0.9" => "HTTP_09",
+            "HTTP/1.0" => "HTTP_10",
+            "HTTP/1.1" => "HTTP_11",
+            "HTTP/2.0" => "HTTP_2",
+            "HTTP/3.0" => "HTTP_3",
+            _ => abort!(
+                Span::call_site(),
+                "Invalid HTTP version";
+                help = "Valid versions are: HTTP/0.9, HTTP/1.0, HTTP/1.1, HTTP/2.0, HTTP/3.0"
+            ),
+        })
+        .map(|v| format_ident!("{}", v))
+        .map(|v| quote! { .version(http::Version::#v) })
 }
 
 /// Get the actual request from the macro input
@@ -140,6 +159,7 @@ impl<'a> Tokenizer<'a> {
 struct Parser<'a> {
     method: String,
     uri: String,
+    version: Option<String>,
     headers: Vec<(String, String)>,
     body: &'a [u8],
 }
@@ -160,10 +180,17 @@ impl<'a> Parser<'a> {
             );
         };
 
+        let mut version = None;
+
+        if !tokenizer.is_end() && !tokenizer.was_newline() {
+            version = tokenizer.next();
+        }
+
         if tokenizer.is_end() {
             return Self {
                 method,
                 uri,
+                version,
                 headers: vec![],
                 body: tokenizer.rest(),
             };
@@ -173,7 +200,7 @@ impl<'a> Parser<'a> {
             abort!(
                 Span::call_site(),
                 "unexpected extra request line item";
-                help = "Try `request!({} {})`", method, uri
+                help = "Try `request!({} {} {})`", method, uri, version.unwrap_or_default()
             );
         }
 
@@ -213,6 +240,7 @@ impl<'a> Parser<'a> {
         Self {
             method,
             uri,
+            version,
             headers,
             body: tokenizer.rest(),
         }

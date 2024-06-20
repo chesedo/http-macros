@@ -1,11 +1,12 @@
 use quote::{quote, ToTokens};
 
-use crate::Parser;
+use crate::{get_version, Parser};
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct RequestBuilder {
     method: String,
     uri: String,
+    version: Option<String>,
     headers: Vec<(String, String)>,
 }
 
@@ -15,6 +16,7 @@ impl RequestBuilder {
         let Parser {
             method,
             uri,
+            version,
             headers,
             ..
         } = Parser::new(buf);
@@ -22,6 +24,7 @@ impl RequestBuilder {
         Self {
             method,
             uri,
+            version,
             headers,
         }
     }
@@ -31,6 +34,7 @@ impl ToTokens for RequestBuilder {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let method = &self.method;
         let uri = &self.uri;
+        let version = get_version(self.version.as_ref());
         let headers = self.headers.iter().map(|(n, v)| {
             quote! {
                 .header(#n, #v)
@@ -41,6 +45,7 @@ impl ToTokens for RequestBuilder {
             http::Request::builder()
                 .method(#method)
                 .uri(#uri)
+                #version
                 #(#headers)*
         };
 
@@ -65,6 +70,19 @@ mod tests {
     }
 
     #[test]
+    fn with_version() {
+        let actual = RequestBuilder::new("GET /health HTTP/1.1");
+        let expected = RequestBuilder {
+            method: "GET".to_string(),
+            uri: "/health".to_string(),
+            version: Some("HTTP/1.1".to_string()),
+            ..Default::default()
+        };
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
     fn with_headers() {
         let actual = RequestBuilder::new(
             r#"GET /health
@@ -74,6 +92,7 @@ Accept: application/json"#,
         let expected = RequestBuilder {
             method: "GET".to_string(),
             uri: "/health".to_string(),
+            version: None,
             headers: Vec::from([
                 ("Host".to_string(), "localhost:8000".to_string()),
                 ("Accept".to_string(), "application/json".to_string()),
@@ -100,10 +119,29 @@ Accept: application/json"#,
     }
 
     #[test]
+    fn version_output() {
+        let input = RequestBuilder {
+            method: "GET".to_string(),
+            uri: "/health".to_string(),
+            version: Some("HTTP/1.0".to_string()),
+            ..Default::default()
+        };
+        let expected = quote! {
+            http::Request::builder()
+                .method("GET")
+                .uri("/health")
+                .version(http::Version::HTTP_10)
+        };
+
+        assert_eq!(input.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
     fn header_output() {
         let input = RequestBuilder {
             method: "PUT".to_string(),
             uri: "/hello".to_string(),
+            version: None,
             headers: Vec::from([
                 ("Host".to_string(), "localhost:8000".to_string()),
                 ("Accept".to_string(), "application/json".to_string()),

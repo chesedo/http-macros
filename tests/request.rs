@@ -14,6 +14,12 @@ fn test_uri() {
 }
 
 #[test]
+fn test_version() {
+    let request = request!("PUT / HTTP/3.0");
+    assert_eq!(request.version(), http::Version::HTTP_3);
+}
+
+#[test]
 fn test_headers() {
     let request = request!(
         "GET /hello

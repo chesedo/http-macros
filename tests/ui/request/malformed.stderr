@@ -29,11 +29,22 @@ error: Missing URI
 
 error: unexpected extra request line item
 
-         = help: Try `request!(POST /reminder)`
+         = help: Try `request!(POST /reminder HTTP/1.1)`
 
   --> tests/ui/request/malformed.rs:14:16
    |
-14 |     let _req = request!(POST /reminder HTTP/1.1);
+14 |     let _req = request!(POST /reminder HTTP/1.1 extra);
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `request` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Invalid HTTP version
+
+         = help: Valid versions are: HTTP/0.9, HTTP/1.0, HTTP/1.1, HTTP/2.0, HTTP/3.0
+
+  --> tests/ui/request/malformed.rs:17:16
+   |
+17 |     let _req = request!(POST /reminder HTTP/0.8);
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the macro `request` (in Nightly builds, run with -Z macro-backtrace for more info)
