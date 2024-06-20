@@ -2,6 +2,7 @@ use proc_macro::Span;
 use proc_macro_error::abort;
 use quote::{format_ident, quote};
 
+/// Get the correct [http::Version] from a string.
 pub fn get_version(version: Option<&String>) -> Option<proc_macro2::TokenStream> {
     version
         .map(|v| match v.as_str() {
@@ -20,6 +21,7 @@ pub fn get_version(version: Option<&String>) -> Option<proc_macro2::TokenStream>
         .map(|v| quote! { .version(http::Version::#v) })
 }
 
+/// Get the headers from a list of key-value pairs.
 pub fn get_headers<'a>(
     headers: impl Iterator<Item = &'a (String, String)> + 'a,
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + 'a {

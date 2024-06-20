@@ -6,6 +6,37 @@ mod request;
 mod request_builder;
 mod token_helpers;
 
+/// Makes it easy to create a [http::request::Builder] from a request string that follows the RFC 7230 spec.
+/// This allows you to manually set a body that is not supported by [request!].
+///
+/// # Simple Example
+/// ```rust
+/// use http_macros::request_builder;
+///
+/// let builder = request_builder!(GET /hello);
+///
+/// assert_eq!(builder.method_ref().unwrap(), http::Method::GET);
+/// assert_eq!(builder.uri_ref().unwrap().path(), "/hello");
+/// ```
+///
+/// # Example with headers and version
+/// A request can also have headers and an optional version. Note, that whenever the request spans multiple lines, then it should be in double quotes.
+///
+/// ```rust
+/// use http_macros::request_builder;
+///
+/// let builder = request_builder!(
+///    "GET /hello HTTP/1.1
+///     Host: example.com
+///     Accept: */*
+/// ");
+///
+/// assert_eq!(builder.method_ref().unwrap(), http::Method::GET);
+/// assert_eq!(builder.uri_ref().unwrap().path(), "/hello");
+/// assert_eq!(builder.version_ref().unwrap(), &http::Version::HTTP_11);
+/// assert_eq!(builder.headers_ref().unwrap().get("Host").unwrap(), "example.com");
+/// assert_eq!(builder.headers_ref().unwrap().get("Accept").unwrap(), "*/*");
+/// ```
 #[proc_macro_error]
 #[proc_macro]
 pub fn request_builder(input: TokenStream) -> TokenStream {
@@ -19,6 +50,42 @@ pub fn request_builder(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Creates a [http::Request] from a request string that follows the RFC 7230 spec.
+/// This makes it easier to construct a request without having to use the builder API from [http::request::Builder].
+///
+/// # Simple Example
+/// ```rust
+/// use http_macros::request;
+///
+/// let request = request!(GET /hello);
+///
+/// assert_eq!(request.method(), http::Method::GET);
+/// assert_eq!(request.uri().path(), "/hello");
+/// ```
+///
+/// # Example with headers, version and body
+/// A request can also have headers and an optional version like [request_builder!].
+///
+/// However, this macro can also take in a body for the request. A body is a string and is separated by an empty line from the headers (if there are any headers).
+/// The body is optional and can be omitted if not needed. Note, since the request spans multiple lines, it should be in double quotes.
+/// ```rust
+/// use http_macros::request;
+///
+/// let request = request!(
+///    r#"POST /hello HTTP/3.0
+///       Host: example.com
+///       Content-Type: application/json
+///
+///       { "name": "John Doe" }
+/// "#);
+///
+/// assert_eq!(request.method(), http::Method::POST);
+/// assert_eq!(request.uri().path(), "/hello");
+/// assert_eq!(request.version(), http::Version::HTTP_3);
+/// assert_eq!(request.headers().get("Host").unwrap(), "example.com");
+/// assert_eq!(request.headers().get("Content-Type").unwrap(), "application/json");
+/// assert_eq!(request.body(), &r#"{ "name": "John Doe" }"#);
+/// ```
 #[proc_macro_error]
 #[proc_macro]
 pub fn request(input: TokenStream) -> TokenStream {

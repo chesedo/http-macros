@@ -5,6 +5,7 @@ use crate::{
     token_helpers::{get_headers, get_version},
 };
 
+/// Represents a HTTP request (which has a body).
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Request {
     method: String,

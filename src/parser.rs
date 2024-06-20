@@ -1,16 +1,19 @@
 use proc_macro::Span;
 use proc_macro_error::abort;
 
+/// A simple tokenizer over some bytes.
 struct Tokenizer<'a> {
     buf: &'a [u8],
     pos: usize,
 }
 
 impl Tokenizer<'_> {
+    /// Creates a new tokenizer from a buffer.
     fn new(buf: &[u8]) -> Tokenizer {
         Tokenizer { buf, pos: 0 }
     }
 
+    /// Returns the next token in the buffer. A token is seperated by a space or a new line.
     fn next(&mut self) -> Option<String> {
         let start = self.pos;
         let mut end = self.pos;
@@ -36,24 +39,29 @@ impl Tokenizer<'_> {
         )
     }
 
+    /// Returns whether the tokenizer has reached the end of the buffer.
     fn is_end(&self) -> bool {
         self.pos >= self.buf.len()
     }
 
+    /// Returns whether the last token was a new line.
     fn was_newline(&self) -> bool {
         self.buf[self.pos - 1] == b'\n'
     }
 
+    /// Returns whether the current token is a new line.
     fn is_newline(&self) -> bool {
         self.buf[self.pos] == b'\n'
     }
 
+    /// Skips the next new line (without checking if it actually is a new line).
     fn skip_newline(&mut self) {
         self.pos += 1;
     }
 }
 
 impl<'a> Tokenizer<'a> {
+    /// Returns the rest of the buffer that has not been processed yet.
     fn rest(self) -> &'a [u8] {
         let Self { buf, pos } = self;
 
@@ -65,6 +73,7 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
+/// A simple HTTP request parser.
 pub struct Parser<'a> {
     pub method: String,
     pub uri: String,
@@ -74,6 +83,7 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// Creates a new parser from a buffer.
     pub fn new(buf: &'a [u8]) -> Parser<'a> {
         let mut tokenizer = Tokenizer::new(buf);
 
@@ -90,11 +100,13 @@ impl<'a> Parser<'a> {
         };
 
         let mut version = None;
+        let line_has_more = !tokenizer.is_end() && !tokenizer.was_newline();
 
-        if !tokenizer.is_end() && !tokenizer.was_newline() {
+        if line_has_more {
             version = tokenizer.next();
         }
 
+        // All the rest (headers and body) is optional
         if tokenizer.is_end() {
             return Self {
                 method,
@@ -105,7 +117,8 @@ impl<'a> Parser<'a> {
             };
         }
 
-        if !tokenizer.was_newline() {
+        let line_has_more = !tokenizer.was_newline();
+        if line_has_more {
             abort!(
                 Span::call_site(),
                 "unexpected extra request line item";

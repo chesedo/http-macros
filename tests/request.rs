@@ -35,14 +35,10 @@ fn test_headers() {
 fn test_body() {
     let request = request!(
         r#"POST /reminder
-           Host: example.com
-           User-Agent: rust-test
 
            { "note": "Buy milk" }
     "#
     );
-    assert_eq!(request.headers().get("Host").unwrap(), "example.com");
-    assert_eq!(request.headers().get("User-Agent").unwrap(), "rust-test");
     assert_eq!(*request.body(), "{ \"note\": \"Buy milk\" }\n");
 }
 

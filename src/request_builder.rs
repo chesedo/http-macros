@@ -1,3 +1,5 @@
+use proc_macro::Span;
+use proc_macro_error::abort;
 use quote::{quote, ToTokens};
 
 use crate::{
@@ -5,6 +7,7 @@ use crate::{
     token_helpers::{get_headers, get_version},
 };
 
+/// Represents a request builder (which does not have a body).
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct RequestBuilder {
     method: String,
@@ -21,8 +24,15 @@ impl RequestBuilder {
             uri,
             version,
             headers,
-            ..
+            body,
         } = Parser::new(buf);
+
+        if !body.is_empty() {
+            abort!(
+                Span::call_site(),
+                "The body of the request is not supported by ``request_builder!` Use `request!` instead."
+            );
+        }
 
         Self {
             method,

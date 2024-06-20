@@ -1,0 +1,12 @@
+error: The body of the request is not supported by ``request_builder!` Use `request!` instead.
+ --> tests/ui/request_builder/body.rs:4:16
+  |
+4 |       let _req = request_builder!(
+  |  ________________^
+5 | |         "GET /hello HTTP/1.1
+6 | |          Host: example.com
+... |
+9 | |     );
+  | |_____^
+  |
+  = note: this error originates in the macro `request_builder` (in Nightly builds, run with -Z macro-backtrace for more info)
