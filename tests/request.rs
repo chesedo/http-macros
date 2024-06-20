@@ -28,7 +28,7 @@ fn test_headers() {
 #[test]
 fn test_body() {
     let request = request!(
-        r#"POST /todo
+        r#"POST /reminder
            Host: example.com
            User-Agent: rust-test
 
@@ -37,6 +37,7 @@ fn test_body() {
     );
     assert_eq!(request.headers().get("Host").unwrap(), "example.com");
     assert_eq!(request.headers().get("User-Agent").unwrap(), "rust-test");
+    assert_eq!(*request.body(), "{ \"note\": \"Buy milk\" }\n");
 }
 
 #[test]

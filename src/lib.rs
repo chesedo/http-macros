@@ -58,7 +58,18 @@ fn get_request(input: TokenStream) -> String {
                 .join("\n")
         }
         proc_macro::TokenTree::Ident(_) => input.to_string(),
-        _ => panic!("Invalid input"), // TODO: Improve error message
+        proc_macro::TokenTree::Group(g) => abort!(
+            g.span(),
+            "Unexpected group";
+            help = "Try `request!({})`", g.stream().to_string()
+        ),
+        proc_macro::TokenTree::Punct(p) => {
+            abort!(
+                p.span(),
+                "Unexpected token";
+                help = "Try `request!(GET /hello)`"
+            );
+        }
     }
 }
 
@@ -138,11 +149,15 @@ impl<'a> Parser<'a> {
         let mut tokenizer = Tokenizer::new(buf);
 
         let Some(method) = tokenizer.next() else {
-            todo!("handle missing method");
+            unreachable!("already checked in `get_request` that at least something exists");
         };
 
         let Some(uri) = tokenizer.next() else {
-            todo!("handle missing uri");
+            abort!(
+                Span::call_site(),
+                "Missing URI";
+                help = "Try `request!({} /)`", method
+            );
         };
 
         if tokenizer.is_end() {
@@ -155,7 +170,11 @@ impl<'a> Parser<'a> {
         }
 
         if !tokenizer.was_newline() {
-            todo!("unexpected extra request line item");
+            abort!(
+                Span::call_site(),
+                "unexpected extra request line item";
+                help = "Try `request!({} {})`", method, uri
+            );
         }
 
         let mut headers = Vec::new();
@@ -168,7 +187,9 @@ impl<'a> Parser<'a> {
             }
 
             let Some(name) = tokenizer.next() else {
-                todo!("handle missing header name");
+                unreachable!(
+                    "this is not the end of the buffer, nor a new line, so there should be a name"
+                );
             };
 
             let name = name.trim_end_matches(':').to_string();
@@ -283,12 +304,5 @@ mod tests {
             ])
         );
         assert_eq!(parser.body, b"{ \"note\": \"Buy milk\" }");
-    }
-
-    #[test]
-    #[should_panic = "unexpected extra request line item"]
-    fn parser_extra_request_line_item() {
-        let buf = b"GET /hello HTTP/1.1 extra";
-        Parser::new(buf);
     }
 }

@@ -61,14 +61,14 @@ mod tests {
     #[test]
     fn simple() {
         let actual = Request::new(
-            r#"POST /todo
+            r#"POST /reminder
 Host: localhost:8000
 
 { "note": "Buy milk" }"#,
         );
         let expected = Request {
             method: "POST".to_string(),
-            uri: "/todo".to_string(),
+            uri: "/reminder".to_string(),
             headers: Vec::from([("Host".to_string(), "localhost:8000".to_string())]),
             body: "{ \"note\": \"Buy milk\" }".as_bytes().to_vec(),
         };

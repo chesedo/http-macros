@@ -1,0 +1,39 @@
+error: Unexpected group
+
+         = help: Try `request!(GET /)`
+
+ --> tests/ui/request/malformed.rs:5:25
+  |
+5 |     let _req = request!({GET /});
+  |                         ^^^^^^^
+
+error: Unexpected token
+
+         = help: Try `request!(GET /hello)`
+
+ --> tests/ui/request/malformed.rs:8:25
+  |
+8 |     let _req = request!(!GET /);
+  |                         ^
+
+error: Missing URI
+
+         = help: Try `request!(POST /)`
+
+  --> tests/ui/request/malformed.rs:11:16
+   |
+11 |     let _req = request!(POST);
+   |                ^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `request` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unexpected extra request line item
+
+         = help: Try `request!(POST /reminder)`
+
+  --> tests/ui/request/malformed.rs:14:16
+   |
+14 |     let _req = request!(POST /reminder HTTP/1.1);
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the macro `request` (in Nightly builds, run with -Z macro-backtrace for more info)
