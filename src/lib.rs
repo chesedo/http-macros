@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use proc_macro::{Span, TokenStream};
 use proc_macro_error::{abort, proc_macro_error};
 
