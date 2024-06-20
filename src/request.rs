@@ -52,7 +52,7 @@ impl ToTokens for Request {
                 .uri(#uri)
                 #version
                 #(#headers)*
-                .body(#body)
+                .body(#body.to_string())
         };
 
         builder.to_tokens(tokens);
@@ -97,7 +97,7 @@ Host: localhost:8000
                 .uri("/health")
                 .version(http::Version::HTTP_2)
                 .header("Host", "localhost:8000")
-                .body("{ \"note\": \"Buy milk\" }")
+                .body("{ \"note\": \"Buy milk\" }".to_string())
         };
 
         assert_eq!(input.to_token_stream().to_string(), expected.to_string());
